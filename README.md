@@ -14,6 +14,17 @@ php artisan gateway:install laravelpay/gateway-paypal
 
 ## Setup
 
+1. Go to https://developer.paypal.com/dashboard/applications/sandbox
+2. Click "Create App" and create a new app, after its created open it
+
+![image](https://github.com/user-attachments/assets/1294a4b7-b070-493e-99be-e17449250ba2)
+
+3. Here you will find your Client ID and Client Secret, you will need this later
+
+![image](https://github.com/user-attachments/assets/85087f0d-b3a7-4102-b091-bc516041985d)
+
+4. run the command below to setup the gateway and fill in the information
+
 ```
-php artisan gateway:install paypal
+php artisan gateway:setup paypal
 ```
