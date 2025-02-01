@@ -83,7 +83,7 @@ class Gateway extends GatewayFoundation
             ],
             'application_context' => [
                 'cancel_url' => $payment->cancelUrl(),
-                'return_url' => $payment->webhookUrl(),
+                'return_url' => $payment->callbackUrl(),
                 'shipping_preference'  => 'NO_SHIPPING',
             ],
         ]);
@@ -206,5 +206,20 @@ class Gateway extends GatewayFoundation
 
         $payment->completed($orderId, $responseData);
         return redirect($payment->successUrl());
+    }
+
+    /**
+     * Handle (webhooks) from PayPal.
+     * PayPal calls this endpoint whenever the payment status changes.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return void
+     *
+     * @throws \Exception
+     */
+    public function webhook(Request $request)
+    {
+        // todo
+        return response()->json(['message' => 'Webhook received']);
     }
 }
