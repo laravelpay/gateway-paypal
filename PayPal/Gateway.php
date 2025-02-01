@@ -83,7 +83,7 @@ class Gateway extends GatewayFoundation
             ],
             'application_context' => [
                 'cancel_url' => $payment->cancelUrl(),
-                'return_url' => $payment->successUrl(),
+                'return_url' => $payment->webhookUrl(),
                 'shipping_preference'  => 'NO_SHIPPING',
             ],
         ]);
@@ -153,6 +153,18 @@ class Gateway extends GatewayFoundation
      */
     public function callback(Request $request)
     {
+        $payment = Payment::where('transaction_id', $request->get('token'))->first();
+
+        if (!$payment) {
+            throw new \Exception("No matching Payment found for transaction_id={$request->get('token')}.");
+        }
+
+        if($payment->isPaid()) {
+            return redirect($payment->successUrl());
+        }
+
+        $this->gateway = $payment->gateway;
+
         // PayPal sends back a "token" parameter which is actually the Order ID.
         // For v2/checkout/orders, it's typically named "token".
         // Double-check the actual parameter PayPal returns (some docs show 'token', others might show 'orderID').
@@ -166,8 +178,8 @@ class Gateway extends GatewayFoundation
         $accessToken = $this->getAccessToken();
 
         // Capture the order
-        $captureResponse = Http::withToken($accessToken)
-            ->post($this->paypalApiUrl("checkout/orders/{$orderId}/capture"));
+        $captureResponse = Http::withToken($accessToken, 'Bearer')
+            ->post($this->paypalApiUrl("checkout/orders/{$orderId}/capture"), ['success' => true]);
 
         if ($captureResponse->failed()) {
             throw new \Exception('Failed to capture PayPal order.');
@@ -188,14 +200,11 @@ class Gateway extends GatewayFoundation
             throw new \Exception("PayPal order not completed. Current status: {$responseData['status']}");
         }
 
-        // Find your local Payment record based on the transaction_id (which you stored as the order ID).
-        // Adjust logic if you store it differently (e.g. under $payment->transaction_id).
-        $payment = Payment::where('transaction_id', $orderId)->first();
-
         if (!$payment) {
             throw new \Exception("No matching Payment found for transaction_id={$orderId}.");
         }
 
-        $payment->completed($orderId,);
+        $payment->completed($orderId, $responseData);
+        return redirect($payment->successUrl());
     }
 }
